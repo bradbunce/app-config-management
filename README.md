@@ -91,8 +91,11 @@ The application uses LaunchDarkly to determine which configuration file to use. 
 
 The application uses the following feature flags:
 
-- `config-path`: Determines the path to the configuration file to use
-- `another-feature-flag`: A sample feature flag for demonstration purposes
+- `config-path`: Determines the path to the configuration file to use based on the domain name, environment, business unit code, and PPC code
+- `feature-enabled`: Controls whether certain features are enabled or disabled
+- `theme-variant`: Controls the UI theme to use (modern, classic, or standard)
+- `api-version`: Controls which API version to use (v1 or v2)
+- `logging-level`: Controls the logging level (debug, info, or error)
 
 For detailed instructions on setting up these feature flags in LaunchDarkly, see [LAUNCHDARKLY_SETUP.md](LAUNCHDARKLY_SETUP.md).
 
