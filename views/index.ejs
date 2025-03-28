@@ -10,19 +10,18 @@
       rel="stylesheet"
     />
     <style>
+      /* Common styles */
       .config-container {
         max-height: 500px;
         overflow-y: auto;
       }
       pre {
-        background-color: #f8f9fa;
         padding: 15px;
         border-radius: 5px;
         font-size: 0.9rem;
       }
       .card {
         margin-bottom: 20px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       }
       .json-key {
         color: #0066cc;
@@ -45,8 +44,6 @@
         align-items: center;
       }
       .config-info {
-        background-color: #e9f7fd;
-        border-left: 4px solid #0dcaf0;
         padding: 10px 15px;
         margin-bottom: 15px;
       }
@@ -55,11 +52,117 @@
         bottom: 10px;
         right: 10px;
         padding: 5px 10px;
-        background: #28a745;
         color: white;
         border-radius: 4px;
         font-size: 0.8rem;
         z-index: 1000;
+      }
+
+      /* Standard Theme (Default) */
+      body.theme-standard {
+        background-color: #ffffff;
+        color: #333333;
+      }
+      .theme-standard pre {
+        background-color: #f8f9fa;
+      }
+      .theme-standard .card {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      .theme-standard .config-info {
+        background-color: #e9f7fd;
+        border-left: 4px solid #0dcaf0;
+      }
+      .theme-standard .node-version {
+        background: #28a745;
+      }
+      .theme-standard .card-header.bg-primary {
+        background-color: #0d6efd !important;
+      }
+      .theme-standard .card-header.bg-success {
+        background-color: #198754 !important;
+      }
+
+      /* Modern Theme */
+      body.theme-modern {
+        background-color: #f5f7fa;
+        color: #2c3e50;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+      .theme-modern pre {
+        background-color: #ffffff;
+        border: 1px solid #e0e0e0;
+      }
+      .theme-modern .card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
+      }
+      .theme-modern .card-header {
+        border-radius: 12px 12px 0 0 !important;
+      }
+      .theme-modern .config-info {
+        background-color: #f0f7ff;
+        border-left: 4px solid #3498db;
+      }
+      .theme-modern .node-version {
+        background: #3498db;
+        border-radius: 20px;
+      }
+      .theme-modern .btn {
+        border-radius: 8px;
+      }
+      .theme-modern .card-header.bg-primary {
+        background-color: #3498db !important;
+      }
+      .theme-modern .card-header.bg-success {
+        background-color: #2ecc71 !important;
+      }
+      .theme-modern .alert-info {
+        background-color: #f0f7ff;
+        border-color: #3498db;
+        color: #2c3e50;
+      }
+
+      /* Classic Theme */
+      body.theme-classic {
+        background-color: #f0f0f0;
+        color: #333333;
+        font-family: Georgia, "Times New Roman", Times, serif;
+      }
+      .theme-classic pre {
+        background-color: #ffffff;
+        border: 1px solid #d0d0d0;
+        box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+      }
+      .theme-classic .card {
+        border: 1px solid #d0d0d0;
+        border-radius: 0;
+        box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      .theme-classic .card-header {
+        border-radius: 0 !important;
+      }
+      .theme-classic .config-info {
+        background-color: #f5f5dc;
+        border-left: 4px solid #8b4513;
+      }
+      .theme-classic .node-version {
+        background: #8b4513;
+      }
+      .theme-classic .btn {
+        border-radius: 0;
+      }
+      .theme-classic .card-header.bg-primary {
+        background-color: #8b4513 !important;
+      }
+      .theme-classic .card-header.bg-success {
+        background-color: #556b2f !important;
+      }
+      .theme-classic .alert-info {
+        background-color: #f5f5dc;
+        border-color: #8b4513;
+        color: #333333;
       }
     </style>
   </head>
@@ -69,27 +172,42 @@
       <div class="row">
         <div class="col-md-12">
           <div class="card">
-            <div
-              class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
-            >
+            <div class="card-header bg-primary text-white">
               <h2 class="mb-0">LaunchDarkly Config Selector Demo</h2>
-              <div>
-                <select
-                  class="form-select form-select-sm"
-                  id="environment"
-                  name="environment"
-                  required
-                  style="width: auto; min-width: 150px"
-                >
-                  <option value="">Select Environment</option>
-                  <option value="dev">Development</option>
-                  <option value="test">Test</option>
-                  <option value="prod">Production</option>
-                </select>
-              </div>
             </div>
             <div class="card-body">
+              <div class="alert alert-info mb-3">
+                <h4 class="alert-heading">User Context Builder</h4>
+                <p class="mb-0">
+                  The selections below define your user context, which will be
+                  passed to the LaunchDarkly context builder on the backend to
+                  determine feature flag values and configuration paths.
+                </p>
+              </div>
               <form id="configForm">
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <label for="environment" class="form-label"
+                      >Application Deployment Environment:</label
+                    >
+                    <select
+                      class="form-select"
+                      id="environment"
+                      name="environment"
+                      required
+                    >
+                      <option value="">Select Deployment Environment</option>
+                      <option value="dev">Development</option>
+                      <option value="test">Test</option>
+                      <option value="prod">Production</option>
+                    </select>
+                    <small class="text-muted"
+                      >The deployment environment becomes the "environment"
+                      context attribute in LaunchDarkly.</small
+                    >
+                  </div>
+                  <div class="col-md-6"></div>
+                </div>
                 <div class="row mb-3">
                   <div class="col-md-6">
                     <label for="domain" class="form-label">Domain Name:</label>
@@ -104,8 +222,8 @@
                       <option value="www.domain2.com">www.domain2.com</option>
                     </select>
                     <small class="text-muted"
-                      >Select the domain to determine which configuration to
-                      use.</small
+                      >This domain becomes the "domain" context attribute in
+                      LaunchDarkly.</small
                     >
                   </div>
                   <!-- Empty column for layout balance -->
@@ -124,7 +242,8 @@
                       <option value="3">BU 3 (domain2)</option>
                     </select>
                     <small class="text-muted"
-                      >Select the business unit code.</small
+                      >This becomes the "buCode" context attribute in
+                      LaunchDarkly.</small
                     >
                   </div>
                   <div class="col-md-6">
@@ -133,15 +252,15 @@
                       <option value="">None</option>
                     </select>
                     <small class="text-muted"
-                      >Select the PPC code for the selected business
-                      unit.</small
+                      >This becomes the "ppcCode" context attribute in
+                      LaunchDarkly.</small
                     >
                   </div>
                 </div>
 
                 <div class="d-grid">
                   <button type="submit" class="btn btn-primary">
-                    Get Configuration
+                    Build User Context & Get Configuration
                   </button>
                 </div>
               </form>
@@ -152,7 +271,9 @@
             <div class="spinner-border text-primary" role="status">
               <span class="visually-hidden">Loading...</span>
             </div>
-            <p class="mt-2">Loading configuration...</p>
+            <p class="mt-2">
+              Building user context and loading configuration...
+            </p>
           </div>
 
           <div id="results" class="mt-4 d-none">
@@ -161,11 +282,47 @@
                 <h3 class="mb-0">Configuration Results</h3>
               </div>
               <div class="card-body">
+                <div class="alert alert-info mb-3">
+                  <h5 class="alert-heading">User Context Used</h5>
+                  <div class="row">
+                    <div class="col-md-3">
+                      <strong>Deployment Environment:</strong>
+                      <span id="contextEnvironment"></span>
+                    </div>
+                    <div class="col-md-3">
+                      <strong>Domain:</strong> <span id="contextDomain"></span>
+                    </div>
+                    <div class="col-md-3">
+                      <strong>Business Unit:</strong>
+                      <span id="contextBuCode"></span>
+                    </div>
+                    <div class="col-md-3">
+                      <strong>PPC Code:</strong>
+                      <span id="contextPpcCode"></span>
+                    </div>
+                  </div>
+                </div>
+
                 <div class="alert alert-info">
-                  <strong>Config Path:</strong> <span id="configPath"></span>
+                  <strong>Resolved Config Path:</strong>
+                  <span id="configPath"></span>
                 </div>
 
                 <ul class="nav nav-tabs" id="configTabs" role="tablist">
+                  <li class="nav-item" role="presentation">
+                    <button
+                      class="nav-link"
+                      id="context-tab"
+                      data-bs-toggle="tab"
+                      data-bs-target="#context"
+                      type="button"
+                      role="tab"
+                      aria-controls="context"
+                      aria-selected="false"
+                    >
+                      Raw Context
+                    </button>
+                  </li>
                   <li class="nav-item" role="presentation">
                     <button
                       class="nav-link active"
@@ -239,6 +396,26 @@
                 </ul>
 
                 <div class="tab-content mt-3">
+                  <div
+                    class="tab-pane fade"
+                    id="context"
+                    role="tabpanel"
+                    aria-labelledby="context-tab"
+                  >
+                    <div class="config-info">
+                      <div class="config-header">
+                        <strong>Raw LaunchDarkly Context</strong>
+                        <span class="badge bg-info">Context</span>
+                      </div>
+                      <p class="mb-0">
+                        This is the raw context object that is sent to
+                        LaunchDarkly for feature flag evaluation.
+                      </p>
+                    </div>
+                    <div class="config-container">
+                      <pre id="rawContext"></pre>
+                    </div>
+                  </div>
                   <div
                     class="tab-pane fade show active"
                     id="running"
@@ -570,7 +747,17 @@
               return;
             }
 
-            // Update the UI with the response
+            // Update the user context information
+            document.getElementById("contextEnvironment").textContent =
+              formDataObj.environment || "None";
+            document.getElementById("contextDomain").textContent =
+              formDataObj.domain || "None";
+            document.getElementById("contextBuCode").textContent =
+              formDataObj.buCode || "None";
+            document.getElementById("contextPpcCode").textContent =
+              formDataObj.ppcCode || "None";
+
+            // Update the config path
             document.getElementById("configPath").textContent = data.configPath;
             // Function to format JSON with syntax highlighting
             function formatJSON(json) {
@@ -600,6 +787,11 @@
                   }
                 );
             }
+
+            // Update the raw context tab
+            document.getElementById("rawContext").innerHTML = formatJSON(
+              data.context
+            );
 
             document.getElementById("runningConfig").innerHTML = formatJSON(
               data.runningConfig
@@ -637,6 +829,11 @@
               data.runningConfig.applicationState.flags.themeVariant;
             document.getElementById("themeVariantFlag").textContent =
               themeVariant;
+
+            // Apply theme based on the theme-variant flag
+            document.body.className = ""; // Clear existing theme classes
+            document.body.classList.add(`theme-${themeVariant}`);
+            console.log(`Applied theme: ${themeVariant}`);
 
             // Update api-version flag
             const apiVersion =

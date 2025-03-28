@@ -27,17 +27,17 @@ If you don't already have a LaunchDarkly account, sign up at [https://launchdark
 
 ### Step 3: Create the Feature Flags
 
-#### Config Path Flag (JSON Flag with Dynamic Variables)
+#### Config Path Flag (JSON Flag with Dynamic and Static Variations)
 
 1. In your project, click on "Feature Flags" in the left sidebar
 2. Click "New Feature Flag"
 3. Set the following values:
    - **Name**: Config Path
    - **Key**: config-path
-   - **Description**: Determines which configuration file path to use based on the domain name
+   - **Description**: Determines which configuration file path to use based on the user context attributes
    - **Flag Variations**: JSON
 4. Define the variations:
-   - **Variation 1** (Standard Dynamic Path):
+   - **Variation 1** (Dynamic Path):
      ```json
      {
        "type": "dynamic",
@@ -46,25 +46,26 @@ If you don't already have a LaunchDarkly account, sign up at [https://launchdark
        "buPathTemplate": "${environment}/${domain}/bu${buCode}/config",
        "ppcPathTemplate": "${environment}/${domain}/bu${buCode}/ppccode${ppcCode}/config",
        "description": "Dynamic configuration path based on context variables",
-       "priority": 1
+       "priority": 1,
+       "variationName": "dynamic"
      }
      ```
      Name = "Dynamic Path", Description = "Dynamic path based on context variables"
-   - **Variation 2** (Static Hardcoded Path):
+   - **Variation 2** (Static Default Path):
      ```json
      {
        "type": "static",
-       "path": "special/config",
-       "environment": "${environment}",
-       "description": "Static hardcoded configuration path",
-       "priority": 2
+       "staticPath": "common/default/config1",
+       "description": "Static path to default configuration file",
+       "priority": 2,
+       "variationName": "static"
      }
      ```
-     Name = "Static Path", Description = "Static hardcoded path"
+     Name = "Static Default Path", Description = "Static path to default configuration file"
    - Set the default variation to the "Dynamic Path" variation
 5. Click "Save Flag"
 
-> **Note**: This approach uses a dynamic configuration path that incorporates variables from the context (domain, environment, buCode, ppcCode). The application will substitute these variables with actual values at runtime. This allows for a more flexible configuration selection without needing explicit variations for each domain.
+> **Note**: This flag has two variations: a dynamic variation that uses variables from the context (domain, environment, buCode, ppcCode) to determine the configuration path, and a static variation that always points to the default config file. The application will use the dynamic variation to fetch the appropriate configuration file based on the context attributes, or fall back to the default config file if the static variation is selected.
 
 #### Feature Enabled Flag (Boolean Flag)
 
@@ -129,20 +130,23 @@ If you don't already have a LaunchDarkly account, sign up at [https://launchdark
 
 ### Step 4: Configure Targeting Rules
 
-#### For config-path Flag (JSON Flag with Dynamic Templates)
+#### For config-path Flag (JSON Flag with Dynamic and Static Variations)
 
 1. Click on the "config-path" flag
 2. In the "Targeting" tab, click "Add Rules"
-3. Create a rule for special domains that need a static path:
-   - **Name**: Special Domain Rule
+3. Create a rule for domains that should use the static default config:
+   - **Name**: Default Config Rule
    - **Attribute**: domain
    - **Operator**: is one of
-   - **Values**: special-domain
-   - **Serve**: Select the "Static Path" variation
+   - **Values**: special-domain (or any domain that should use the default config)
+   - **Serve**: Select the "Static Default Path" variation
 4. For all other domains, use the default "Dynamic Path" variation which will dynamically generate the path based on the context variables
 5. Click "Save Changes"
 
-> **Note**: With this approach, you don't need to create a separate rule for each domain. The dynamic path template will automatically use the domain name from the context to generate the appropriate path. This makes it much easier to add new domains without having to update the LaunchDarkly configuration.
+> **Note**: This approach gives you two options:
+>
+> 1. **Dynamic Path**: Uses variables from the context to determine the configuration path, allowing for flexible configuration selection based on domain, environment, business unit code, and PPC code.
+> 2. **Static Default Path**: Always points to the default config file, regardless of the context attributes. This is useful for testing or for domains that don't need custom configurations.
 
 #### For feature-enabled Flag
 
@@ -231,7 +235,7 @@ LD_SDK_KEY_PROD=your-production-sdk-key
 
 ## How the Feature Flags Work in the Application
 
-### config-path Flag (JSON Flag with Dynamic Templates)
+### config-path Flag (JSON Flag with Dynamic and Static Variations)
 
 The `config-path` flag is used to determine which configuration file to use based on the domain name, environment, business unit code, and PPC code. In the application, this is implemented in the `/get-config` endpoint:
 
@@ -256,27 +260,34 @@ try {
 
   console.log(`Got config path object from LaunchDarkly:`, configPathObj);
 
-  // Determine which template to use based on available context
-  let template;
-  if (buCode && ppcCode) {
-    template = configPathObj.ppcPathTemplate;
-  } else if (buCode) {
-    template = configPathObj.buPathTemplate;
-  } else if (environment) {
-    template = configPathObj.environmentPathTemplate;
+  // Check if we're using the static or dynamic variation
+  if (configPathObj.type === "static") {
+    // Static variation - use the static path directly
+    configPath = configPathObj.staticPath;
+    console.log(`Using static configuration path: ${configPath}`);
   } else {
-    template = configPathObj.pathTemplate;
+    // Dynamic variation - determine which template to use based on available context
+    let template;
+    if (buCode && ppcCode) {
+      template = configPathObj.ppcPathTemplate;
+    } else if (buCode) {
+      template = configPathObj.buPathTemplate;
+    } else if (environment) {
+      template = configPathObj.environmentPathTemplate;
+    } else {
+      template = configPathObj.pathTemplate;
+    }
+
+    // Replace variables in the template
+    configPath = template
+      .replace(/\${domain}/g, domainName)
+      .replace(/\${environment}/g, environment)
+      .replace(/\${buCode}/g, buCode || "")
+      .replace(/\${ppcCode}/g, ppcCode || "");
+
+    console.log(`Using configuration path template: ${template}`);
+    console.log(`Resolved configuration path: ${configPath}`);
   }
-
-  // Replace variables in the template
-  configPath = template
-    .replace(/\${domain}/g, domainName)
-    .replace(/\${environment}/g, environment)
-    .replace(/\${buCode}/g, buCode || "")
-    .replace(/\${ppcCode}/g, ppcCode || "");
-
-  console.log(`Using configuration path template: ${template}`);
-  console.log(`Resolved configuration path: ${configPath}`);
 } catch (error) {
   // Fall back to mock data if LaunchDarkly is not available
 }

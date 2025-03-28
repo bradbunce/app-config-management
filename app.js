@@ -36,7 +36,7 @@ const mockFlags = {
   // The config-path flag determines which configuration file path to use based on the domain name
   // This is the primary feature flag that controls the configuration selection
   "config-path": {
-    // Dynamic path that uses variables from the context
+    // Variation 1: Dynamic path that uses variables from the context
     domain1: {
       type: "dynamic",
       pathTemplate: "${domain}/config",
@@ -46,25 +46,22 @@ const mockFlags = {
         "${environment}/${domain}/bu${buCode}/ppccode${ppcCode}/config",
       description: "Dynamic configuration path based on context variables",
       priority: 1,
+      variationName: "dynamic",
     },
     domain2: {
-      type: "dynamic",
-      pathTemplate: "${domain}/config",
-      environmentPathTemplate: "${environment}/${domain}/config",
-      buPathTemplate: "${environment}/${domain}/bu${buCode}/config",
-      ppcPathTemplate:
-        "${environment}/${domain}/bu${buCode}/ppccode${ppcCode}/config",
-      description: "Dynamic configuration path based on context variables",
+      type: "static",
+      staticPath: "common/default/config1",
+      description: "Static path to default configuration file",
       priority: 1,
+      variationName: "static",
     },
+    // Variation 2: Static path that always points to the default config file
     default: {
-      type: "dynamic",
-      pathTemplate: "default/config",
-      environmentPathTemplate: "${environment}/default/config",
-      buPathTemplate: "${environment}/default/config",
-      ppcPathTemplate: "${environment}/default/config",
-      description: "Default dynamic configuration path",
+      type: "static",
+      staticPath: "common/default/config1",
+      description: "Static path to default configuration file",
       priority: 2,
+      variationName: "static",
     },
   },
 
@@ -125,14 +122,31 @@ async function initLDClient(environment, customSdkKey = null) {
         const domainName = context.domain || "default";
         console.log(`Using domain name for flag lookup: ${domainName}`);
 
-        // Look up the flag value for this domain
-        const flagValue =
-          mockFlags[flagKey]?.[domainName] ||
-          mockFlags[flagKey]?.default ||
-          defaultValue;
+        // For the config-path flag, we need to handle the case where we want to use the static path
+        if (flagKey === "config-path") {
+          // Check if we have a specific rule for this domain
+          const domainConfig = mockFlags[flagKey]?.[domainName];
+          if (domainConfig) {
+            console.log(
+              `Found config for domain ${domainName}: ${domainConfig.type}`
+            );
+            return domainConfig;
+          }
 
-        console.log(`Flag ${flagKey} value for ${domainName}: ${flagValue}`);
-        return flagValue;
+          // Otherwise, use the default config
+          const defaultConfig = mockFlags[flagKey]?.default || defaultValue;
+          console.log(`Using default config: ${defaultConfig.type}`);
+          return defaultConfig;
+        } else {
+          // For other flags, just return the value
+          const flagValue =
+            mockFlags[flagKey]?.[domainName] ||
+            mockFlags[flagKey]?.default ||
+            defaultValue;
+
+          console.log(`Flag ${flagKey} value for ${domainName}: ${flagValue}`);
+          return flagValue;
+        }
       },
       close: async () => {},
     };
@@ -204,27 +218,34 @@ app.post("/get-config", async (req, res) => {
 
       console.log(`Got config path object from LaunchDarkly:`, configPathObj);
 
-      // Determine which template to use based on available context
-      let template;
-      if (buCode && ppcCode) {
-        template = configPathObj.ppcPathTemplate;
-      } else if (buCode) {
-        template = configPathObj.buPathTemplate;
-      } else if (environment) {
-        template = configPathObj.environmentPathTemplate;
+      // Check if we're using the static or dynamic variation
+      if (configPathObj.type === "static") {
+        // Static variation - use the static path directly
+        configPath = configPathObj.staticPath;
+        console.log(`Using static configuration path: ${configPath}`);
       } else {
-        template = configPathObj.pathTemplate;
+        // Dynamic variation - determine which template to use based on available context
+        let template;
+        if (buCode && ppcCode) {
+          template = configPathObj.ppcPathTemplate;
+        } else if (buCode) {
+          template = configPathObj.buPathTemplate;
+        } else if (environment) {
+          template = configPathObj.environmentPathTemplate;
+        } else {
+          template = configPathObj.pathTemplate;
+        }
+
+        // Replace variables in the template
+        configPath = template
+          .replace(/\${domain}/g, domainName)
+          .replace(/\${environment}/g, environment)
+          .replace(/\${buCode}/g, buCode || "")
+          .replace(/\${ppcCode}/g, ppcCode || "");
+
+        console.log(`Using configuration path template: ${template}`);
+        console.log(`Resolved configuration path: ${configPath}`);
       }
-
-      // Replace variables in the template
-      configPath = template
-        .replace(/\${domain}/g, domainName)
-        .replace(/\${environment}/g, environment)
-        .replace(/\${buCode}/g, buCode || "")
-        .replace(/\${ppcCode}/g, ppcCode || "");
-
-      console.log(`Using configuration path template: ${template}`);
-      console.log(`Resolved configuration path: ${configPath}`);
     } catch (error) {
       console.warn(
         "Error getting configuration path from LaunchDarkly, using mock data",
@@ -240,27 +261,34 @@ app.post("/get-config", async (req, res) => {
           ppcPathTemplate: "${environment}/default/config",
         };
 
-      // Determine which template to use based on available context
-      let template;
-      if (buCode && ppcCode) {
-        template = mockConfigObj.ppcPathTemplate;
-      } else if (buCode) {
-        template = mockConfigObj.buPathTemplate;
-      } else if (environment) {
-        template = mockConfigObj.environmentPathTemplate;
+      // Check if we're using the static or dynamic variation
+      if (mockConfigObj.type === "static") {
+        // Static variation - use the static path directly
+        configPath = mockConfigObj.staticPath;
+        console.log(`Using static configuration path: ${configPath}`);
       } else {
-        template = mockConfigObj.pathTemplate;
+        // Dynamic variation - determine which template to use based on available context
+        let template;
+        if (buCode && ppcCode) {
+          template = mockConfigObj.ppcPathTemplate;
+        } else if (buCode) {
+          template = mockConfigObj.buPathTemplate;
+        } else if (environment) {
+          template = mockConfigObj.environmentPathTemplate;
+        } else {
+          template = mockConfigObj.pathTemplate;
+        }
+
+        // Replace variables in the template
+        configPath = template
+          .replace(/\${domain}/g, domainName)
+          .replace(/\${environment}/g, environment)
+          .replace(/\${buCode}/g, buCode || "")
+          .replace(/\${ppcCode}/g, ppcCode || "");
+
+        console.log(`Using mock configuration path template: ${template}`);
+        console.log(`Resolved mock configuration path: ${configPath}`);
       }
-
-      // Replace variables in the template
-      configPath = template
-        .replace(/\${domain}/g, domainName)
-        .replace(/\${environment}/g, environment)
-        .replace(/\${buCode}/g, buCode || "")
-        .replace(/\${ppcCode}/g, ppcCode || "");
-
-      console.log(`Using mock configuration path template: ${template}`);
-      console.log(`Resolved mock configuration path: ${configPath}`);
     }
 
     console.log(`Final config path: ${configPath}`);
@@ -269,7 +297,16 @@ app.post("/get-config", async (req, res) => {
     console.log(
       `Loading configuration files for domain: ${domainName}, environment: ${environment}`
     );
-    const configs = await loadConfigs(environment, domainName, buCode, ppcCode);
+
+    // Check if we're using a static path from the feature flag
+    const isStaticPath = configPathObj.type === "static";
+    const configs = await loadConfigs(
+      environment,
+      domainName,
+      buCode,
+      ppcCode,
+      isStaticPath ? configPath : null
+    );
     console.log(
       `Loaded configuration files from: ${configs.common.source} and ${configs.environment.source}`
     );
@@ -361,6 +398,7 @@ app.post("/get-config", async (req, res) => {
       configPath,
       configs,
       runningConfig,
+      context, // Include the context object in the response
     });
   } catch (error) {
     console.error("Error:", error);
@@ -369,7 +407,13 @@ app.post("/get-config", async (req, res) => {
 });
 
 // Load config files based on the parameters
-async function loadConfigs(environment, domainName, buCode, ppcCode) {
+async function loadConfigs(
+  environment,
+  domainName,
+  buCode,
+  ppcCode,
+  staticPath = null
+) {
   try {
     // Determine the paths for the config files
     let commonConfigPath = "public/configs/common/default/config1.json";
@@ -377,8 +421,14 @@ async function loadConfigs(environment, domainName, buCode, ppcCode) {
       environment === "dev" ? "8" : environment === "test" ? "11" : "14"
     }.json`;
 
-    // Try to load domain-specific common config
-    if (domainName) {
+    // If a static path is provided, use it for the common config
+    if (staticPath) {
+      // Convert the static path to a file path
+      commonConfigPath = `public/configs/${staticPath}.json`;
+      console.log(`Using static path for common config: ${commonConfigPath}`);
+    }
+    // Otherwise, try to load domain-specific common config
+    else if (domainName) {
       const domainCommonPath = `public/configs/common/${domainName}/config${
         domainName === "domain1" ? "2" : "6"
       }.json`;
