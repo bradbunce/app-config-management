@@ -1,0 +1,36 @@
+{
+  "rbacApplicationName": "DOMAIN1_APP",
+  "urls": {
+    "addProfile": "/s/domain1ProfileUrl",
+    "homePages": {
+      "agency": "/s/domain1AgencyPath",
+      "employee": "/s/domain1EmployeePath",
+      "member": "/s/domain1MemberPath"
+    },
+    "logout": "/s/domain1Logout",
+    "pageNotFound": "/s/404",
+    "internalServerError": "/s/500",
+    "noMemberProfiles": "/s/seeHealthPlans"
+  },
+  "assets": {
+    "scripts": {
+      "analytics": "https://analytics.domain1.com/script.js"
+    }
+  },
+  "services": {
+    "events": "/events",
+    "headerConfig": "/headerConfig",
+    "labels": "/labels"
+  },
+  "testConfiguration": {
+    "referenceFlowClientId": "domain1-client-id"
+  },
+  "oAuthClientId": "domain1-oauth-id",
+  "webPlanId": [217],
+  "customerName": "Domain1 Corporation",
+  "domainName": "domain1",
+  "themeColors": {
+    "primary": "#3366FF",
+    "secondary": "#99CCFF"
+  }
+}

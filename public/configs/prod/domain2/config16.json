@@ -1,0 +1,40 @@
+{
+  "rbacApplicationName": "PROD_DOMAIN2_APP",
+  "urls": {
+    "addProfile": "/s/domain2/profileUrl",
+    "homePages": {
+      "agency": "/s/domain2/agencyPath",
+      "employee": "/s/domain2/employeePath",
+      "member": "/s/domain2/memberPath"
+    },
+    "logout": "/s/domain2/logout",
+    "pageNotFound": "/s/404",
+    "internalServerError": "/s/500",
+    "noMemberProfiles": "/s/seeHealthPlans"
+  },
+  "assets": {
+    "scripts": {
+      "analytics": "https://analytics.domain2.com/script.js"
+    }
+  },
+  "services": {
+    "events": "/domain2/events",
+    "headerConfig": "/domain2/headerConfig",
+    "labels": "/domain2/labels"
+  },
+  "testConfiguration": {
+    "referenceFlowClientId": "prod-domain2-client-id"
+  },
+  "oAuthClientId": "prod-domain2-oauth-id",
+  "webPlanId": [217],
+  "environment": "prod",
+  "apiEndpoints": {
+    "userService": "https://api.domain2.com/users",
+    "dataService": "https://api.domain2.com/data"
+  },
+  "featureFlags": {
+    "newDashboard": true,
+    "betaFeatures": false,
+    "debugMode": false
+  }
+}

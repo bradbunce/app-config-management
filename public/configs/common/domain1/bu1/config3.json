@@ -1,0 +1,39 @@
+{
+  "rbacApplicationName": "DOMAIN1_BU1_APP",
+  "urls": {
+    "addProfile": "/s/domain1/bu1/profileUrl",
+    "homePages": {
+      "agency": "/s/domain1/bu1/agencyPath",
+      "employee": "/s/domain1/bu1/employeePath",
+      "member": "/s/domain1/bu1/memberPath"
+    },
+    "logout": "/s/domain1/bu1/logout",
+    "pageNotFound": "/s/404",
+    "internalServerError": "/s/500",
+    "noMemberProfiles": "/s/seeHealthPlans"
+  },
+  "assets": {
+    "scripts": {
+      "analytics": "https://analytics.domain1-bu1.com/script.js"
+    }
+  },
+  "services": {
+    "events": "/events/bu1",
+    "headerConfig": "/headerConfig/bu1",
+    "labels": "/labels/bu1"
+  },
+  "testConfiguration": {
+    "referenceFlowClientId": "domain1-bu1-client-id"
+  },
+  "oAuthClientId": "domain1-bu1-oauth-id",
+  "webPlanId": [217],
+  "customerName": "Domain1 BU1 Division",
+  "domainName": "domain1",
+  "buCode": "1",
+  "buName": "Business Unit 1",
+  "themeColors": {
+    "primary": "#3366FF",
+    "secondary": "#99CCFF",
+    "tertiary": "#CCDDFF"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "rbacApplicationName": "DEFAULT_APP",
+  "urls": {
+    "addProfile": "/s/defaultProfileUrl",
+    "homePages": {
+      "agency": "/s/defaultAgencyPath",
+      "employee": "/s/defaultEmployeePath",
+      "member": "/s/defaultMemberPath"
+    },
+    "logout": "/s/defaultLogout",
+    "pageNotFound": "/s/404",
+    "internalServerError": "/s/500",
+    "noMemberProfiles": "/s/seeHealthPlans"
+  },
+  "assets": {
+    "scripts": {
+      "analytics": "https://analytics.default.com/script.js"
+    }
+  },
+  "services": {
+    "events": "/events",
+    "headerConfig": "/headerConfig",
+    "labels": "/labels"
+  },
+  "testConfiguration": {
+    "referenceFlowClientId": "default-client-id"
+  },
+  "oAuthClientId": "default-oauth-id",
+  "webPlanId": [217],
+  "customerName": "Default Customer",
+  "domainName": "default",
+  "themeColors": {
+    "primary": "#007BFF",
+    "secondary": "#6C757D"
+  }
+}

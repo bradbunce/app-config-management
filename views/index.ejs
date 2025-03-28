@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+  <!-- Running on Node.js v22 -->
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LaunchDarkly Config Selector</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .config-container {
+        max-height: 500px;
+        overflow-y: auto;
+      }
+      pre {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        font-size: 0.9rem;
+      }
+      .card {
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      .json-key {
+        color: #0066cc;
+      }
+      .json-string {
+        color: #008000;
+      }
+      .json-number {
+        color: #aa5500;
+      }
+      .json-boolean {
+        color: #9900cc;
+      }
+      .json-null {
+        color: #999;
+      }
+      .config-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .config-info {
+        background-color: #e9f7fd;
+        border-left: 4px solid #0dcaf0;
+        padding: 10px 15px;
+        margin-bottom: 15px;
+      }
+      .node-version {
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
+        padding: 5px 10px;
+        background: #28a745;
+        color: white;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        z-index: 1000;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="node-version">Node.js v22</div>
+    <div class="container mt-5">
+      <div class="row">
+        <div class="col-md-12">
+          <div class="card">
+            <div
+              class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
+            >
+              <h2 class="mb-0">LaunchDarkly Config Selector Demo</h2>
+              <div>
+                <select
+                  class="form-select form-select-sm"
+                  id="environment"
+                  name="environment"
+                  required
+                  style="width: auto; min-width: 150px"
+                >
+                  <option value="">Select Environment</option>
+                  <option value="dev">Development</option>
+                  <option value="test">Test</option>
+                  <option value="prod">Production</option>
+                </select>
+              </div>
+            </div>
+            <div class="card-body">
+              <form id="configForm">
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <label for="domain" class="form-label">Domain Name:</label>
+                    <select
+                      class="form-select"
+                      id="domain"
+                      name="domain"
+                      required
+                    >
+                      <option value="">Select Domain</option>
+                      <option value="www.domain1.com">www.domain1.com</option>
+                      <option value="www.domain2.com">www.domain2.com</option>
+                    </select>
+                    <small class="text-muted"
+                      >Select the domain to determine which configuration to
+                      use.</small
+                    >
+                  </div>
+                  <!-- Empty column for layout balance -->
+                  <div class="col-md-6"></div>
+                </div>
+
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <label for="buCode" class="form-label"
+                      >Business Unit Code:</label
+                    >
+                    <select class="form-select" id="buCode" name="buCode">
+                      <option value="">None</option>
+                      <option value="1">BU 1 (domain1)</option>
+                      <option value="2">BU 2 (domain1)</option>
+                      <option value="3">BU 3 (domain2)</option>
+                    </select>
+                    <small class="text-muted"
+                      >Select the business unit code.</small
+                    >
+                  </div>
+                  <div class="col-md-6">
+                    <label for="ppcCode" class="form-label">PPC Code:</label>
+                    <select class="form-select" id="ppcCode" name="ppcCode">
+                      <option value="">None</option>
+                    </select>
+                    <small class="text-muted"
+                      >Select the PPC code for the selected business
+                      unit.</small
+                    >
+                  </div>
+                </div>
+
+                <div class="d-grid">
+                  <button type="submit" class="btn btn-primary">
+                    Get Configuration
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <div id="loading" class="text-center mt-4 d-none">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading configuration...</p>
+          </div>
+
+          <div id="results" class="mt-4 d-none">
+            <div class="card">
+              <div class="card-header bg-success text-white">
+                <h3 class="mb-0">Configuration Results</h3>
+              </div>
+              <div class="card-body">
+                <div class="alert alert-info">
+                  <strong>Config Path:</strong> <span id="configPath"></span>
+                </div>
+
+                <ul class="nav nav-tabs" id="configTabs" role="tablist">
+                  <li class="nav-item" role="presentation">
+                    <button
+                      class="nav-link active"
+                      id="running-tab"
+                      data-bs-toggle="tab"
+                      data-bs-target="#running"
+                      type="button"
+                      role="tab"
+                      aria-controls="running"
+                      aria-selected="true"
+                    >
+                      Running Config
+                    </button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button
+                      class="nav-link"
+                      id="flags-tab"
+                      data-bs-toggle="tab"
+                      data-bs-target="#flags"
+                      type="button"
+                      role="tab"
+                      aria-controls="flags"
+                      aria-selected="false"
+                    >
+                      Feature Flags
+                    </button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button
+                      class="nav-link"
+                      id="merged-tab"
+                      data-bs-toggle="tab"
+                      data-bs-target="#merged"
+                      type="button"
+                      role="tab"
+                      aria-controls="merged"
+                      aria-selected="false"
+                    >
+                      Merged Config
+                    </button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button
+                      class="nav-link"
+                      id="common-tab"
+                      data-bs-toggle="tab"
+                      data-bs-target="#common"
+                      type="button"
+                      role="tab"
+                      aria-controls="common"
+                      aria-selected="false"
+                    >
+                      Common Config
+                    </button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button
+                      class="nav-link"
+                      id="env-tab"
+                      data-bs-toggle="tab"
+                      data-bs-target="#env"
+                      type="button"
+                      role="tab"
+                      aria-controls="env"
+                      aria-selected="false"
+                    >
+                      Environment Config
+                    </button>
+                  </li>
+                </ul>
+
+                <div class="tab-content mt-3">
+                  <div
+                    class="tab-pane fade show active"
+                    id="running"
+                    role="tabpanel"
+                    aria-labelledby="running-tab"
+                  >
+                    <div class="config-info">
+                      <div class="config-header">
+                        <strong>Full Running Configuration</strong>
+                        <span class="badge bg-success">Active</span>
+                      </div>
+                      <p class="mb-0">
+                        This is the complete configuration that would be used by
+                        the application at runtime.
+                      </p>
+                    </div>
+                    <div class="config-container">
+                      <pre id="runningConfig"></pre>
+                    </div>
+                  </div>
+                  <div
+                    class="tab-pane fade"
+                    id="flags"
+                    role="tabpanel"
+                    aria-labelledby="flags-tab"
+                  >
+                    <div class="config-info">
+                      <div class="config-header">
+                        <strong>Feature Flags</strong>
+                        <span class="badge bg-primary">LaunchDarkly</span>
+                      </div>
+                      <p class="mb-0">
+                        These are the feature flags used by the application. The
+                        values are determined by LaunchDarkly based on the
+                        domain name.
+                      </p>
+                    </div>
+                    <div class="card mb-3">
+                      <div class="card-header">
+                        <strong>config-path</strong>
+                        <small class="text-muted ms-2">String Flag</small>
+                      </div>
+                      <div class="card-body">
+                        <p>
+                          Determines which configuration file path to use based
+                          on the domain name.
+                        </p>
+                        <div class="alert alert-info">
+                          <strong>Current Value:</strong>
+                          <span id="configPathFlag"></span>
+                        </div>
+                        <h6>Targeting Rules:</h6>
+                        <ul>
+                          <li>
+                            <strong>domain1:</strong> "domain1-config-path"
+                          </li>
+                          <li>
+                            <strong>domain2:</strong> "domain2-config-path"
+                          </li>
+                          <li>
+                            <strong>default:</strong> "default-config-path"
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    <div class="card mb-3">
+                      <div class="card-header">
+                        <strong>feature-enabled</strong>
+                        <small class="text-muted ms-2">Boolean Flag</small>
+                      </div>
+                      <div class="card-body">
+                        <p>
+                          Controls whether certain features are enabled or
+                          disabled.
+                        </p>
+                        <div class="alert" id="featureFlagAlert">
+                          <strong>Current Value:</strong>
+                          <span id="featureFlag"></span>
+                        </div>
+                        <h6>Targeting Rules:</h6>
+                        <ul>
+                          <li><strong>domain1:</strong> true</li>
+                          <li><strong>domain2:</strong> false</li>
+                          <li><strong>default:</strong> false</li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    <div class="card mb-3">
+                      <div class="card-header">
+                        <strong>theme-variant</strong>
+                        <small class="text-muted ms-2">String Flag</small>
+                      </div>
+                      <div class="card-body">
+                        <p>Controls the UI theme to use.</p>
+                        <div class="alert alert-info">
+                          <strong>Current Value:</strong>
+                          <span id="themeVariantFlag"></span>
+                        </div>
+                        <h6>Targeting Rules:</h6>
+                        <ul>
+                          <li><strong>domain1:</strong> "modern"</li>
+                          <li><strong>domain2:</strong> "classic"</li>
+                          <li><strong>default:</strong> "standard"</li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    <div class="card mb-3">
+                      <div class="card-header">
+                        <strong>api-version</strong>
+                        <small class="text-muted ms-2">String Flag</small>
+                      </div>
+                      <div class="card-body">
+                        <p>Controls which API version to use.</p>
+                        <div class="alert alert-info">
+                          <strong>Current Value:</strong>
+                          <span id="apiVersionFlag"></span>
+                        </div>
+                        <h6>Targeting Rules:</h6>
+                        <ul>
+                          <li><strong>domain1:</strong> "v2"</li>
+                          <li><strong>domain2:</strong> "v1"</li>
+                          <li><strong>default:</strong> "v1"</li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    <div class="card">
+                      <div class="card-header">
+                        <strong>logging-level</strong>
+                        <small class="text-muted ms-2">String Flag</small>
+                      </div>
+                      <div class="card-body">
+                        <p>Controls the logging level.</p>
+                        <div class="alert alert-info">
+                          <strong>Current Value:</strong>
+                          <span id="loggingLevelFlag"></span>
+                        </div>
+                        <h6>Targeting Rules:</h6>
+                        <ul>
+                          <li><strong>domain1:</strong> "debug"</li>
+                          <li><strong>domain2:</strong> "info"</li>
+                          <li><strong>default:</strong> "error"</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    class="tab-pane fade"
+                    id="merged"
+                    role="tabpanel"
+                    aria-labelledby="merged-tab"
+                  >
+                    <div class="config-container">
+                      <pre id="mergedConfig"></pre>
+                    </div>
+                  </div>
+                  <div
+                    class="tab-pane fade"
+                    id="common"
+                    role="tabpanel"
+                    aria-labelledby="common-tab"
+                  >
+                    <div class="config-container">
+                      <pre id="commonConfig"></pre>
+                    </div>
+                  </div>
+                  <div
+                    class="tab-pane fade"
+                    id="env"
+                    role="tabpanel"
+                    aria-labelledby="env-tab"
+                  >
+                    <div class="config-container">
+                      <pre id="envConfig"></pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // Function to update BU code dropdown based on domain selection
+      function updateBuCodeOptions() {
+        const domain = document.getElementById("domain").value;
+        const buCodeSelect = document.getElementById("buCode");
+
+        // Clear existing options except the first one
+        while (buCodeSelect.options.length > 1) {
+          buCodeSelect.remove(1);
+        }
+
+        // Disable BU code dropdown if no domain is selected
+        if (!domain) {
+          buCodeSelect.disabled = true;
+          return;
+        }
+
+        // Enable BU code dropdown
+        buCodeSelect.disabled = false;
+
+        // Add options based on domain
+        if (domain === "www.domain1.com") {
+          const option1 = document.createElement("option");
+          option1.value = "1";
+          option1.text = "BU 1 (domain1)";
+          buCodeSelect.add(option1);
+
+          const option2 = document.createElement("option");
+          option2.value = "2";
+          option2.text = "BU 2 (domain1)";
+          buCodeSelect.add(option2);
+        } else if (domain === "www.domain2.com") {
+          const option = document.createElement("option");
+          option.value = "3";
+          option.text = "BU 3 (domain2)";
+          buCodeSelect.add(option);
+        }
+
+        // Update PPC code options when BU code changes
+        updatePpcCodeOptions();
+      }
+
+      // Function to update PPC code dropdown based on BU code selection
+      function updatePpcCodeOptions() {
+        const buCode = document.getElementById("buCode").value;
+        const ppcCodeSelect = document.getElementById("ppcCode");
+
+        // Clear existing options except the first one
+        while (ppcCodeSelect.options.length > 1) {
+          ppcCodeSelect.remove(1);
+        }
+
+        // Disable PPC code dropdown if no BU code is selected
+        if (!buCode) {
+          ppcCodeSelect.disabled = true;
+          return;
+        }
+
+        // Enable PPC code dropdown
+        ppcCodeSelect.disabled = false;
+
+        // Add options based on BU code
+        if (buCode === "1") {
+          // Add PPC options for BU 1
+          const option1 = document.createElement("option");
+          option1.value = "1";
+          option1.text = "PPC 1 (for BU 1)";
+          ppcCodeSelect.add(option1);
+
+          const option2 = document.createElement("option");
+          option2.value = "2";
+          option2.text = "PPC 2 (for BU 1)";
+          ppcCodeSelect.add(option2);
+        } else if (buCode === "2") {
+          // Add PPC options for BU 2
+          const option1 = document.createElement("option");
+          option1.value = "1";
+          option1.text = "PPC 1 (for BU 2)";
+          ppcCodeSelect.add(option1);
+
+          const option2 = document.createElement("option");
+          option2.value = "2";
+          option2.text = "PPC 2 (for BU 2)";
+          ppcCodeSelect.add(option2);
+        } else if (buCode === "3") {
+          // Add PPC options for BU 3
+          const option1 = document.createElement("option");
+          option1.value = "1";
+          option1.text = "PPC 1 (for BU 3)";
+          ppcCodeSelect.add(option1);
+
+          const option2 = document.createElement("option");
+          option2.value = "2";
+          option2.text = "PPC 2 (for BU 3)";
+          ppcCodeSelect.add(option2);
+        }
+      }
+
+      // Initialize form controls
+      document.addEventListener("DOMContentLoaded", function () {
+        // Set up domain change handler
+        document
+          .getElementById("domain")
+          .addEventListener("change", updateBuCodeOptions);
+
+        // Set up BU code change handler
+        document
+          .getElementById("buCode")
+          .addEventListener("change", updatePpcCodeOptions);
+
+        // Initialize dropdowns
+        updateBuCodeOptions();
+        updatePpcCodeOptions();
+      });
+
+      document
+        .getElementById("configForm")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const formData = new FormData(this);
+          const formDataObj = Object.fromEntries(formData.entries());
+
+          // Show loading spinner
+          document.getElementById("loading").classList.remove("d-none");
+          document.getElementById("results").classList.add("d-none");
+
+          try {
+            const response = await fetch("/get-config", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(formDataObj),
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+              alert(`Error: ${data.error}`);
+              return;
+            }
+
+            // Update the UI with the response
+            document.getElementById("configPath").textContent = data.configPath;
+            // Function to format JSON with syntax highlighting
+            function formatJSON(json) {
+              if (typeof json !== "string") {
+                json = JSON.stringify(json, null, 2);
+              }
+              return json
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(
+                  /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+                  function (match) {
+                    let cls = "json-number";
+                    if (/^"/.test(match)) {
+                      if (/:$/.test(match)) {
+                        cls = "json-key";
+                      } else {
+                        cls = "json-string";
+                      }
+                    } else if (/true|false/.test(match)) {
+                      cls = "json-boolean";
+                    } else if (/null/.test(match)) {
+                      cls = "json-null";
+                    }
+                    return '<span class="' + cls + '">' + match + "</span>";
+                  }
+                );
+            }
+
+            document.getElementById("runningConfig").innerHTML = formatJSON(
+              data.runningConfig
+            );
+            document.getElementById("mergedConfig").innerHTML = formatJSON(
+              data.configs.merged
+            );
+            document.getElementById("commonConfig").innerHTML = formatJSON(
+              data.configs.common
+            );
+            document.getElementById("envConfig").innerHTML = formatJSON(
+              data.configs.environment
+            );
+
+            // Update feature flags tab
+            document.getElementById("configPathFlag").textContent =
+              data.configPath;
+
+            // Update feature-enabled flag
+            const featureEnabled =
+              data.runningConfig.applicationState.flags.featureEnabled;
+            document.getElementById("featureFlag").textContent = featureEnabled;
+
+            // Update feature flag alert class based on value
+            const featureFlagAlert =
+              document.getElementById("featureFlagAlert");
+            if (featureEnabled) {
+              featureFlagAlert.className = "alert alert-success";
+            } else {
+              featureFlagAlert.className = "alert alert-secondary";
+            }
+
+            // Update theme-variant flag
+            const themeVariant =
+              data.runningConfig.applicationState.flags.themeVariant;
+            document.getElementById("themeVariantFlag").textContent =
+              themeVariant;
+
+            // Update api-version flag
+            const apiVersion =
+              data.runningConfig.applicationState.flags.apiVersion;
+            document.getElementById("apiVersionFlag").textContent = apiVersion;
+
+            // Update logging-level flag
+            const loggingLevel =
+              data.runningConfig.applicationState.flags.loggingLevel;
+            document.getElementById("loggingLevelFlag").textContent =
+              loggingLevel;
+
+            // Show results
+            document.getElementById("results").classList.remove("d-none");
+          } catch (error) {
+            console.error("Error:", error);
+            alert(`Error: ${error.message}`);
+          } finally {
+            // Hide loading spinner
+            document.getElementById("loading").classList.add("d-none");
+          }
+        });
+    </script>
+  </body>
+</html>
